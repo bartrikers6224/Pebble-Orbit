@@ -14,16 +14,21 @@ Built for **Pebble Round 2** (`gabbro`) on Pebble SDK 4.44.
 
 ## Install on your watch
 
-1. Build, or use the already-built `build/orbit.pbw`.
-2. Open the Pebble mobile app, sign in, and enable **Dev Connection** on your Round 2 (Devices → ⋮ → Dev Connection).
-3. From this project:
+The built watchface is **`orbit.pbw`** in this repo. Send that file to your phone (AirDrop, email, Drive), then open it with the Pebble app while the Round 2 is connected.
+
+- **iPhone:** Files, Mail, or AirDrop → tap `orbit.pbw` → open in **Pebble**.
+- **Android:** Files / Downloads → tap `orbit.pbw` → open with **Pebble**. If Pebble is not listed, install [Sideload Helper by Rebble](https://help.rebble.io/sideloading/) first.
+
+Orbit shows up in the locker as sideloaded. Start it from **Apps → Watchfaces**. Tap the gear for colors.
+
+To install from a computer with the SDK instead:
 
 ```bash
 pebble login
 pebble install --cloudpebble
 ```
 
-You can also drop `build/orbit.pbw` onto the watch from the Pebble app’s sideload / open-with flow.
+(Enable **Dev Connection** first: Pebble app → Devices → ⋮ on the watch.)
 
 ## Build locally
 
