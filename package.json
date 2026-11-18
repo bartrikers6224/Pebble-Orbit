@@ -1,0 +1,37 @@
+{
+  "name": "orbit",
+  "author": "Bart at GigSettler",
+  "version": "1.0.0",
+  "keywords": [
+    "pebble-app"
+  ],
+  "private": true,
+  "dependencies": {
+    "@rebble/clay": "^1.1.0"
+  },
+  "pebble": {
+    "displayName": "Orbit",
+    "uuid": "fbc35674-14a0-4480-bc09-a51bdb9b1822",
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "targetPlatforms": [
+      "gabbro"
+    ],
+    "watchapp": {
+      "watchface": true
+    },
+    "capabilities": [
+      "configurable"
+    ],
+    "messageKeys": [
+      "BackgroundColor",
+      "TimeColor",
+      "HoursColor",
+      "MinutesColor",
+      "SecondsColor"
+    ],
+    "resources": {
+      "media": []
+    }
+  }
+}

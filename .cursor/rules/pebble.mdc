@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+This is Orbit, a Pebble Round 2 watchface (gabbro, 260x260). Build with `pebble build`, install with `pebble install --emulator gabbro --vnc` in headless environments, and screenshot with `pebble screenshot --vnc --emulator gabbro --scale 6 --no-open screenshot_gabbro.png`. Seconds ring must stay on a 10-second AppTimer, never `SECOND_UNIT`.
