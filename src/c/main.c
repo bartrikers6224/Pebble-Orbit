@@ -64,15 +64,6 @@ static void prv_draw_ring(GContext *ctx, GRect rect, uint16_t thickness,
 
   graphics_context_set_fill_color(ctx, accent);
   graphics_fill_radial(ctx, rect, GOvalScaleModeFitCircle, thickness, 0, angle_end);
-
-  const int cap_r = thickness / 2;
-  if (cap_r <= 0) {
-    return;
-  }
-
-  const GRect mid = grect_inset(rect, GEdgeInsets(cap_r));
-  graphics_fill_circle(ctx, gpoint_from_polar(mid, GOvalScaleModeFitCircle, 0), cap_r);
-  graphics_fill_circle(ctx, gpoint_from_polar(mid, GOvalScaleModeFitCircle, angle_end), cap_r);
 }
 
 static void prv_format_time(struct tm *tick_time, char *buffer, size_t length) {
