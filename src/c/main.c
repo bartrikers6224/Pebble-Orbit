@@ -54,9 +54,11 @@ static GRect prv_square_inset(GRect bounds, int pad) {
 }
 
 static void prv_draw_ring(GContext *ctx, GRect rect, uint16_t thickness,
-                          int32_t angle_end, GColor accent) {
-  graphics_context_set_fill_color(ctx, prv_track_color(accent));
-  graphics_fill_radial(ctx, rect, GOvalScaleModeFitCircle, thickness, 0, TRIG_MAX_ANGLE);
+                          int32_t angle_end, GColor accent, bool show_track) {
+  if (show_track) {
+    graphics_context_set_fill_color(ctx, prv_track_color(accent));
+    graphics_fill_radial(ctx, rect, GOvalScaleModeFitCircle, thickness, 0, TRIG_MAX_ANGLE);
+  }
 
   if (angle_end <= 0) {
     return;
@@ -117,17 +119,20 @@ static void canvas_update_proc(Layer *layer, GContext *ctx) {
   time_t now = time(NULL);
   struct tm *tick_time = localtime(&now);
 
-  const int hour12 = tick_time->tm_hour % 12;
   const int minute = tick_time->tm_min;
   const int second_q = (tick_time->tm_sec / SECONDS_STEP) * SECONDS_STEP;
+  const bool twenty_four = clock_is_24h_style();
+  const int hour_period = twenty_four ? 24 : 12;
+  const int hour_in_period = twenty_four ? tick_time->tm_hour : (tick_time->tm_hour % 12);
 
-  const int32_t hour_angle = DEG_TO_TRIGANGLE((hour12 * 60 + minute) * 360 / (12 * 60));
+  const int32_t hour_angle = DEG_TO_TRIGANGLE(
+      (hour_in_period * 60 + minute) * 360 / (hour_period * 60));
   const int32_t minute_angle = DEG_TO_TRIGANGLE(minute * 360 / 60);
   const int32_t second_angle = DEG_TO_TRIGANGLE(second_q * 360 / 60);
 
-  prv_draw_ring(ctx, hours_rect, (uint16_t)thickness, hour_angle, s_settings.HoursColor);
-  prv_draw_ring(ctx, minutes_rect, (uint16_t)thickness, minute_angle, s_settings.MinutesColor);
-  prv_draw_ring(ctx, seconds_rect, (uint16_t)thickness, second_angle, s_settings.SecondsColor);
+  prv_draw_ring(ctx, hours_rect, (uint16_t)thickness, hour_angle, s_settings.HoursColor, true);
+  prv_draw_ring(ctx, minutes_rect, (uint16_t)thickness, minute_angle, s_settings.MinutesColor, false);
+  prv_draw_ring(ctx, seconds_rect, (uint16_t)thickness, second_angle, s_settings.SecondsColor, false);
 
   static char time_buffer[8];
   static char date_buffer[16];
