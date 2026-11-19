@@ -33,16 +33,6 @@ static void prv_load_settings(void) {
   persist_read_data(SETTINGS_KEY, &s_settings, sizeof(s_settings));
 }
 
-static GColor prv_track_color(GColor accent) {
-  const int r = accent.r * 48;
-  const int g = accent.g * 48;
-  const int b = accent.b * 48;
-  if ((r + g + b) < 48) {
-    return GColorDarkGray;
-  }
-  return GColorFromRGB(r, g, b);
-}
-
 static GRect prv_square_inset(GRect bounds, int pad) {
   const GPoint center = grect_center_point(&bounds);
   int side = bounds.size.w < bounds.size.h ? bounds.size.w : bounds.size.h;
@@ -54,12 +44,7 @@ static GRect prv_square_inset(GRect bounds, int pad) {
 }
 
 static void prv_draw_ring(GContext *ctx, GRect rect, uint16_t thickness,
-                          int32_t angle_end, GColor accent, bool show_track) {
-  if (show_track) {
-    graphics_context_set_fill_color(ctx, prv_track_color(accent));
-    graphics_fill_radial(ctx, rect, GOvalScaleModeFitCircle, thickness, 0, TRIG_MAX_ANGLE);
-  }
-
+                          int32_t angle_end, GColor accent) {
   if (angle_end <= 0) {
     return;
   }
@@ -130,9 +115,9 @@ static void canvas_update_proc(Layer *layer, GContext *ctx) {
   const int32_t minute_angle = DEG_TO_TRIGANGLE(minute * 360 / 60);
   const int32_t second_angle = DEG_TO_TRIGANGLE(second_q * 360 / 60);
 
-  prv_draw_ring(ctx, hours_rect, (uint16_t)thickness, hour_angle, s_settings.HoursColor, true);
-  prv_draw_ring(ctx, minutes_rect, (uint16_t)thickness, minute_angle, s_settings.MinutesColor, false);
-  prv_draw_ring(ctx, seconds_rect, (uint16_t)thickness, second_angle, s_settings.SecondsColor, false);
+  prv_draw_ring(ctx, hours_rect, (uint16_t)thickness, hour_angle, s_settings.HoursColor);
+  prv_draw_ring(ctx, minutes_rect, (uint16_t)thickness, minute_angle, s_settings.MinutesColor);
+  prv_draw_ring(ctx, seconds_rect, (uint16_t)thickness, second_angle, s_settings.SecondsColor);
 
   static char time_buffer[8];
   static char date_buffer[16];
