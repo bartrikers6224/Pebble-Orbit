@@ -31,21 +31,21 @@ module.exports = [
       {
         type: 'color',
         messageKey: 'HoursColor',
-        defaultValue: '0x00AAFF',
+        defaultValue: '0x55AAFF',
         label: 'Hours ring',
         sunlight: true
       },
       {
         type: 'color',
         messageKey: 'MinutesColor',
-        defaultValue: '0xFF55AA',
+        defaultValue: '0x00AAFF',
         label: 'Minutes ring',
         sunlight: true
       },
       {
         type: 'color',
         messageKey: 'SecondsColor',
-        defaultValue: '0x55FF00',
+        defaultValue: '0x0055FF',
         label: 'Seconds ring',
         sunlight: true
       }

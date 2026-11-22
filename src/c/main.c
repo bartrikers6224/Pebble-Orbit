@@ -43,9 +43,9 @@ static uint8_t prv_seconds_step(void) {
 static void prv_default_settings(void) {
   s_settings.BackgroundColor = GColorBlack;
   s_settings.TimeColor = GColorWhite;
-  s_settings.HoursColor = GColorVividCerulean;
-  s_settings.MinutesColor = GColorFashionMagenta;
-  s_settings.SecondsColor = GColorBrightGreen;
+  s_settings.HoursColor = GColorPictonBlue;
+  s_settings.MinutesColor = GColorVividCerulean;
+  s_settings.SecondsColor = GColorBlueMoon;
   s_settings.BatterySave = false;
   s_settings.SecondsInterval = 10;
 }
