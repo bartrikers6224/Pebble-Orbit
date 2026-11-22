@@ -15,6 +15,22 @@ module.exports = [
         defaultValue: 'Colors'
       },
       {
+        type: 'select',
+        id: 'ColorScheme',
+        defaultValue: '',
+        label: 'Color scheme',
+        options: [
+          { label: 'Keep current', value: '' },
+          { label: 'Midnight — black, three blues', value: 'midnight' },
+          { label: 'Dusk — black, violet / pink / gold', value: 'dusk' },
+          { label: 'Paper — white, navy / teal / coral', value: 'paper' }
+        ]
+      },
+      {
+        type: 'text',
+        defaultValue: 'Pick a scheme to load those colors. You can still tweak them below, then Save.'
+      },
+      {
         type: 'color',
         messageKey: 'BackgroundColor',
         defaultValue: '0x000000',

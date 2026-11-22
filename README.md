@@ -8,7 +8,7 @@ A Pebble Round 2 watchface: large digital time in the center, three concentric r
 - **Middle ring** — minutes
 - **Inner ring** — seconds, at 1, 10, or 30 second steps (Clay setting)
 
-Tap the gear next to Orbit in the Pebble app to set colors, the seconds interval, and idle sleep.
+Tap the gear next to Orbit in the Pebble app to set colors, the seconds interval, and idle sleep. Color schemes: **Midnight** (black, three blues), **Dusk** (black, violet / pink / gold), and **Paper** (white, navy / teal / coral).
 
 Built for **Pebble Round 2** (`gabbro`) on Pebble SDK 4.44.
 
