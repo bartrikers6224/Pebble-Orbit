@@ -126,6 +126,12 @@ static void canvas_update_proc(Layer *layer, GContext *ctx) {
   const GRect full = layer_get_bounds(layer);
   const GRect bounds = layer_get_unobstructed_bounds(layer);
 
+  if (s_sleeping) {
+    graphics_context_set_fill_color(ctx, GColorBlack);
+    graphics_fill_rect(ctx, full, 0, GCornerNone);
+    return;
+  }
+
   graphics_context_set_fill_color(ctx, s_settings.BackgroundColor);
   graphics_fill_rect(ctx, full, 0, GCornerNone);
   graphics_context_set_antialiased(ctx, true);
@@ -241,12 +247,19 @@ static void prv_enter_sleep(void) {
   s_sleeping = true;
   prv_cancel_seconds_timer();
   prv_set_ticking(false);
+  if (s_window) {
+    window_set_background_color(s_window, GColorBlack);
+  }
+  prv_mark_dirty();
 }
 
 static void prv_exit_sleep(void) {
   s_sleeping = false;
   s_still_minutes = 0;
   s_have_accel = false;
+  if (s_window) {
+    window_set_background_color(s_window, s_settings.BackgroundColor);
+  }
   prv_set_ticking(true);
   prv_schedule_seconds_timer();
   prv_mark_dirty();

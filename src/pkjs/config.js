@@ -90,7 +90,7 @@ module.exports = [
       },
       {
         type: 'text',
-        defaultValue: 'Stops all Orbit updates while charging, or after about five minutes with no motion. The last frame stays on the display. Shake or tap the watch to wake. Off-wrist is inferred from stillness, not a worn sensor.'
+        defaultValue: 'Stops all Orbit updates while charging, or after about five minutes with no motion. The screen goes black so a frozen time is not mistaken for the current time. Shake or tap the watch to wake. Off-wrist is inferred from stillness, not a worn sensor.'
       }
     ]
   },

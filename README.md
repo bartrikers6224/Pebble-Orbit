@@ -52,4 +52,4 @@ pebble emu-app-config --emulator gabbro
 
 Time digits and the hour/minute rings update once a minute. The seconds ring is driven by an `AppTimer` aligned to the interval you pick — 1, 10, or 30 seconds. There is no `SECOND_UNIT` tick subscription.
 
-**Sleep when idle** (off by default) stops those timers while the watch is charging, or after about five minutes with no motion. The last frame stays on the e-paper display. Shake or tap to wake. Use this if you want a 1-second seconds ring while worn; the watch still sleeps on the charger or a table.
+**Sleep when idle** (off by default) stops those timers while the watch is charging, or after about five minutes with no motion. The display goes black so a stale time cannot be read as current. Shake or tap to wake. Use this if you want a 1-second seconds ring while worn; the watch still sleeps on the charger or a table.
