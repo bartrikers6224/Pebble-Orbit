@@ -5,7 +5,7 @@ module.exports = [
   },
   {
     type: 'text',
-    defaultValue: 'Three rings around digital time. Hours on the outside, minutes in the middle, seconds inside — seconds step every 10 seconds to save battery.'
+    defaultValue: 'Three rings around digital time. Hours on the outside, minutes in the middle, seconds inside.'
   },
   {
     type: 'section',
@@ -48,6 +48,49 @@ module.exports = [
         defaultValue: '0x55FF00',
         label: 'Seconds ring',
         sunlight: true
+      }
+    ]
+  },
+  {
+    type: 'section',
+    items: [
+      {
+        type: 'heading',
+        defaultValue: 'Seconds'
+      },
+      {
+        type: 'select',
+        messageKey: 'SecondsInterval',
+        defaultValue: '10',
+        label: 'Update every',
+        options: [
+          { label: '1 second', value: '1' },
+          { label: '10 seconds', value: '10' },
+          { label: '30 seconds', value: '30' }
+        ]
+      },
+      {
+        type: 'text',
+        defaultValue: 'Finer updates use more battery while the watch is awake. With Sleep when idle on, a 1-second ring is reasonable.'
+      }
+    ]
+  },
+  {
+    type: 'section',
+    items: [
+      {
+        type: 'heading',
+        defaultValue: 'Battery'
+      },
+      {
+        type: 'toggle',
+        messageKey: 'BatterySave',
+        label: 'Sleep when idle',
+        defaultValue: false
+      },
+      {
+        type: 'text',
+        defaultValue: 'Stops all Orbit updates while charging, or after about five minutes with no motion. The last frame stays on the display. Shake or tap the watch to wake. Off-wrist is inferred from stillness, not a worn sensor.'
       }
     ]
   },

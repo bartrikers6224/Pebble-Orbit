@@ -4,7 +4,7 @@ alwaysApply: true
 
 ## Project Overview
 
-Orbit is a Pebble Round 2 (gabbro) watchface: digital time in the center, three concentric progress rings for hours, minutes, and seconds. Seconds update every 10 seconds.
+Orbit is a Pebble Round 2 (gabbro) watchface: digital time in the center, three concentric progress rings for hours, minutes, and seconds. Seconds update on an AppTimer at 1s, 10s, or 30s from Clay settings. Optional idle sleep stops updates while charging or after ~5 minutes still.
 
 ## Supported Platforms
 
@@ -30,7 +30,7 @@ Clay settings: `pebble emu-app-config --emulator gabbro`
 ## Project Structure
 
 ```
-src/c/main.c          Watchface drawing, 10s seconds timer, Clay persistence
+src/c/main.c          Watchface drawing, AppTimer seconds, idle sleep, Clay persistence
 src/pkjs/index.js     Clay bootstrap
-src/pkjs/config.js    Color pickers for background, time, and three rings
+src/pkjs/config.js    Colors, seconds interval, sleep-when-idle toggle
 ```

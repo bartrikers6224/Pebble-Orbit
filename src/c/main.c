@@ -1,7 +1,8 @@
 #include <pebble.h>
 
 #define SETTINGS_KEY 1
-#define SECONDS_STEP 10
+#define STILL_MINUTES_TO_SLEEP 5
+#define STILL_DELTA_MG 180
 
 typedef struct ClaySettings {
   GColor BackgroundColor;
@@ -9,12 +10,35 @@ typedef struct ClaySettings {
   GColor HoursColor;
   GColor MinutesColor;
   GColor SecondsColor;
+  bool BatterySave;
+  uint8_t SecondsInterval;
 } ClaySettings;
 
 static ClaySettings s_settings;
 static Window *s_window;
 static Layer *s_canvas;
 static AppTimer *s_seconds_timer;
+static bool s_sleeping;
+static bool s_ticking;
+static bool s_tap_subscribed;
+static bool s_battery_subscribed;
+static uint8_t s_still_minutes;
+static AccelData s_last_accel;
+static bool s_have_accel;
+
+static void prv_schedule_seconds_timer(void);
+static void prv_enter_sleep(void);
+static void prv_exit_sleep(void);
+static void prv_apply_power_mode(void);
+static void tick_handler(struct tm *tick_time, TimeUnits units_changed);
+
+static uint8_t prv_seconds_step(void) {
+  const uint8_t step = s_settings.SecondsInterval;
+  if (step == 1 || step == 10 || step == 30) {
+    return step;
+  }
+  return 10;
+}
 
 static void prv_default_settings(void) {
   s_settings.BackgroundColor = GColorBlack;
@@ -22,6 +46,8 @@ static void prv_default_settings(void) {
   s_settings.HoursColor = GColorVividCerulean;
   s_settings.MinutesColor = GColorFashionMagenta;
   s_settings.SecondsColor = GColorBrightGreen;
+  s_settings.BatterySave = false;
+  s_settings.SecondsInterval = 10;
 }
 
 static void prv_save_settings(void) {
@@ -31,6 +57,28 @@ static void prv_save_settings(void) {
 static void prv_load_settings(void) {
   prv_default_settings();
   persist_read_data(SETTINGS_KEY, &s_settings, sizeof(s_settings));
+  s_settings.SecondsInterval = prv_seconds_step();
+}
+
+static int prv_tuple_int(const Tuple *tuple) {
+  if (!tuple) {
+    return 0;
+  }
+  if (tuple->type == TUPLE_CSTRING) {
+    int value = 0;
+    for (const char *p = tuple->value->cstring; *p >= '0' && *p <= '9'; p++) {
+      value = value * 10 + (*p - '0');
+    }
+    return value;
+  }
+  switch (tuple->length) {
+    case 1:
+      return (int)tuple->value->int8;
+    case 2:
+      return (int)tuple->value->int16;
+    default:
+      return (int)tuple->value->int32;
+  }
 }
 
 static GRect prv_square_inset(GRect bounds, int pad) {
@@ -105,7 +153,8 @@ static void canvas_update_proc(Layer *layer, GContext *ctx) {
   struct tm *tick_time = localtime(&now);
 
   const int minute = tick_time->tm_min;
-  const int second_q = (tick_time->tm_sec / SECONDS_STEP) * SECONDS_STEP;
+  const int step = prv_seconds_step();
+  const int second_q = (tick_time->tm_sec / step) * step;
   const bool twenty_four = clock_is_24h_style();
   const int hour_period = twenty_four ? 24 : 12;
   const int hour_in_period = twenty_four ? tick_time->tm_hour : (tick_time->tm_hour % 12);
@@ -154,27 +203,122 @@ static void prv_mark_dirty(void) {
   }
 }
 
-static void prv_seconds_timer_callback(void *context);
-
-static void prv_schedule_seconds_timer(void) {
+static void prv_cancel_seconds_timer(void) {
   if (s_seconds_timer) {
     app_timer_cancel(s_seconds_timer);
     s_seconds_timer = NULL;
   }
+}
 
-  time_t now = time(NULL);
-  struct tm *tick_time = localtime(&now);
-  int remainder = tick_time->tm_sec % SECONDS_STEP;
-  int wait_sec = SECONDS_STEP - remainder;
-  if (wait_sec <= 0) {
-    wait_sec = SECONDS_STEP;
+static void prv_set_ticking(bool on) {
+  if (on && !s_ticking) {
+    tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
+    s_ticking = true;
+  } else if (!on && s_ticking) {
+    tick_timer_service_unsubscribe();
+    s_ticking = false;
   }
-  s_seconds_timer = app_timer_register((uint32_t)wait_sec * 1000, prv_seconds_timer_callback, NULL);
+}
+
+static bool prv_is_plugged(void) {
+  return battery_state_service_peek().is_plugged;
+}
+
+static int prv_abs_i(int value) {
+  return value < 0 ? -value : value;
+}
+
+static bool prv_accel_still(const AccelData *now, const AccelData *prev) {
+  return prv_abs_i(now->x - prev->x) < STILL_DELTA_MG &&
+         prv_abs_i(now->y - prev->y) < STILL_DELTA_MG &&
+         prv_abs_i(now->z - prev->z) < STILL_DELTA_MG;
+}
+
+static void prv_enter_sleep(void) {
+  if (s_sleeping) {
+    return;
+  }
+  s_sleeping = true;
+  prv_cancel_seconds_timer();
+  prv_set_ticking(false);
+}
+
+static void prv_exit_sleep(void) {
+  s_sleeping = false;
+  s_still_minutes = 0;
+  s_have_accel = false;
+  prv_set_ticking(true);
+  prv_schedule_seconds_timer();
+  prv_mark_dirty();
+}
+
+static void prv_check_idle(void) {
+  if (!s_settings.BatterySave || s_sleeping) {
+    return;
+  }
+
+  if (prv_is_plugged()) {
+    prv_enter_sleep();
+    return;
+  }
+
+  AccelData data;
+  if (accel_service_peek(&data) != 0 || data.did_vibrate) {
+    return;
+  }
+
+  if (s_have_accel && prv_accel_still(&data, &s_last_accel)) {
+    if (s_still_minutes < 255) {
+      s_still_minutes++;
+    }
+    if (s_still_minutes >= STILL_MINUTES_TO_SLEEP) {
+      prv_enter_sleep();
+      return;
+    }
+  } else {
+    s_still_minutes = 0;
+  }
+
+  s_last_accel = data;
+  s_have_accel = true;
+}
+
+static void prv_seconds_timer_callback(void *context);
+
+static void prv_schedule_seconds_timer(void) {
+  prv_cancel_seconds_timer();
+  if (s_sleeping) {
+    return;
+  }
+
+  const int step = prv_seconds_step();
+  time_t now = 0;
+  uint16_t ms = 0;
+  time_ms(&now, &ms);
+  struct tm *tick_time = localtime(&now);
+  int remainder = tick_time->tm_sec % step;
+  int wait_sec = step - remainder;
+  if (wait_sec <= 0) {
+    wait_sec = step;
+  }
+
+  uint32_t wait_ms = (uint32_t)wait_sec * 1000;
+  if (wait_ms > ms) {
+    wait_ms -= ms;
+  }
+  if (wait_ms == 0) {
+    wait_ms = 1;
+  }
+
+  s_seconds_timer = app_timer_register(wait_ms, prv_seconds_timer_callback, NULL);
 }
 
 static void prv_seconds_timer_callback(void *context) {
   (void)context;
   s_seconds_timer = NULL;
+  if (s_sleeping) {
+    return;
+  }
   prv_mark_dirty();
   prv_schedule_seconds_timer();
 }
@@ -183,6 +327,71 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   (void)tick_time;
   (void)units_changed;
   prv_mark_dirty();
+  prv_check_idle();
+  if (!s_sleeping) {
+    prv_schedule_seconds_timer();
+  }
+}
+
+static void prv_tap_handler(AccelAxisType axis, int32_t direction) {
+  (void)axis;
+  (void)direction;
+  s_still_minutes = 0;
+  s_have_accel = false;
+  if (!s_settings.BatterySave) {
+    return;
+  }
+  if (s_sleeping && !prv_is_plugged()) {
+    prv_exit_sleep();
+  }
+}
+
+static void prv_battery_handler(BatteryChargeState charge) {
+  if (!s_settings.BatterySave) {
+    return;
+  }
+  if (charge.is_plugged) {
+    prv_enter_sleep();
+  }
+}
+
+static void prv_apply_power_mode(void) {
+  if (s_settings.BatterySave) {
+    if (!s_tap_subscribed) {
+      accel_tap_service_subscribe(prv_tap_handler);
+      s_tap_subscribed = true;
+    }
+    if (!s_battery_subscribed) {
+      battery_state_service_subscribe(prv_battery_handler);
+      s_battery_subscribed = true;
+    }
+    if (prv_is_plugged()) {
+      prv_enter_sleep();
+      return;
+    }
+    if (s_sleeping) {
+      return;
+    }
+    prv_set_ticking(true);
+    prv_schedule_seconds_timer();
+    return;
+  }
+
+  if (s_tap_subscribed) {
+    accel_tap_service_unsubscribe();
+    s_tap_subscribed = false;
+  }
+  if (s_battery_subscribed) {
+    battery_state_service_unsubscribe();
+    s_battery_subscribed = false;
+  }
+  s_still_minutes = 0;
+  s_have_accel = false;
+  if (s_sleeping) {
+    prv_exit_sleep();
+    return;
+  }
+  prv_set_ticking(true);
   prv_schedule_seconds_timer();
 }
 
@@ -215,12 +424,27 @@ static void prv_inbox_received(DictionaryIterator *iter, void *context) {
     s_settings.SecondsColor = GColorFromHEX(seconds->value->int32);
     changed = true;
   }
+  Tuple *interval = dict_find(iter, MESSAGE_KEY_SecondsInterval);
+  if (interval) {
+    int value = prv_tuple_int(interval);
+    if (value != 1 && value != 10 && value != 30) {
+      value = 10;
+    }
+    s_settings.SecondsInterval = (uint8_t)value;
+    changed = true;
+  }
+  Tuple *battery_save = dict_find(iter, MESSAGE_KEY_BatterySave);
+  if (battery_save) {
+    s_settings.BatterySave = prv_tuple_int(battery_save) != 0;
+    changed = true;
+  }
 
   if (changed) {
     prv_save_settings();
     if (s_window) {
       window_set_background_color(s_window, s_settings.BackgroundColor);
     }
+    prv_apply_power_mode();
     prv_mark_dirty();
   }
 }
@@ -273,16 +497,20 @@ static void init(void) {
   app_message_register_inbox_received(prv_inbox_received);
   app_message_open(256, 256);
 
-  tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
-  prv_schedule_seconds_timer();
+  prv_apply_power_mode();
 }
 
 static void deinit(void) {
-  if (s_seconds_timer) {
-    app_timer_cancel(s_seconds_timer);
-    s_seconds_timer = NULL;
+  prv_cancel_seconds_timer();
+  prv_set_ticking(false);
+  if (s_tap_subscribed) {
+    accel_tap_service_unsubscribe();
+    s_tap_subscribed = false;
   }
-  tick_timer_service_unsubscribe();
+  if (s_battery_subscribed) {
+    battery_state_service_unsubscribe();
+    s_battery_subscribed = false;
+  }
   app_message_deregister_callbacks();
   window_destroy(s_window);
 }
