@@ -32,6 +32,6 @@ Clay settings: `pebble emu-app-config --emulator gabbro`
 ```
 src/c/main.c          Watchface drawing, AppTimer seconds, idle sleep, Clay persistence
 src/pkjs/index.js     Clay bootstrap
-src/pkjs/config.js    Colors, schemes, seconds interval, sleep-when-idle toggle
-src/pkjs/custom-clay.js  Applies Midnight / Dusk / Paper from circular scheme previews
+src/pkjs/config.js    Color pickers, seconds interval, sleep-when-idle toggle
+screenshots/gabbro_*.png  260x260 appstore shots: Midnight, Dusk, Paper
 ```

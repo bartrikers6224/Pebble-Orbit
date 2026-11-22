@@ -8,11 +8,7 @@ A Pebble Round 2 watchface: large digital time in the center, three concentric r
 - **Middle ring** — minutes
 - **Inner ring** — seconds, at 1, 10, or 30 second steps (Clay setting)
 
-Tap the gear next to Orbit in the Pebble app to set colors, the seconds interval, and idle sleep. Settings shows three circular defaults — tap one to load it, then Save.
-
-| Midnight | Dusk | Paper |
-| --- | --- | --- |
-| ![Midnight](screenshots/scheme_midnight.png) | ![Dusk](screenshots/scheme_dusk.png) | ![Paper](screenshots/scheme_paper.png) |
+Tap the gear next to Orbit in the Pebble app to set colors, the seconds interval, and idle sleep.
 
 Built for **Pebble Round 2** (`gabbro`) on Pebble SDK 4.44.
 
@@ -57,3 +53,17 @@ pebble emu-app-config --emulator gabbro
 Time digits and the hour/minute rings update once a minute. The seconds ring is driven by an `AppTimer` aligned to the interval you pick — 1, 10, or 30 seconds. There is no `SECOND_UNIT` tick subscription.
 
 **Sleep when idle** (off by default) stops those timers while the watch is charging, or after about five minutes with no motion. The display goes black so a stale time cannot be read as current. Shake or tap to wake. Use this if you want a 1-second seconds ring while worn; the watch still sleeps on the charger or a table.
+
+## App store screenshots
+
+Gabbro listing images are 260×260, unframed. Upload these three as the Round 2 screenshots (up to five per platform):
+
+| File | Look |
+| --- | --- |
+| `screenshots/gabbro_midnight.png` | Black, three blues |
+| `screenshots/gabbro_dusk.png` | Black, violet / pink / gold |
+| `screenshots/gabbro_paper.png` | White, navy / teal / coral |
+
+| Midnight | Dusk | Paper |
+| --- | --- | --- |
+| ![Midnight](screenshots/scheme_midnight.png) | ![Dusk](screenshots/scheme_dusk.png) | ![Paper](screenshots/scheme_paper.png) |
