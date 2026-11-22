@@ -15,20 +15,44 @@ module.exports = [
         defaultValue: 'Colors'
       },
       {
-        type: 'select',
-        id: 'ColorScheme',
-        defaultValue: '',
-        label: 'Color scheme',
-        options: [
-          { label: 'Keep current', value: '' },
-          { label: 'Midnight — black, three blues', value: 'midnight' },
-          { label: 'Dusk — black, violet / pink / gold', value: 'dusk' },
-          { label: 'Paper — white, navy / teal / coral', value: 'paper' }
-        ]
+        type: 'text',
+        id: 'SchemePreviews',
+        defaultValue:
+          '<style>' +
+          '.orbit-schemes{display:flex;justify-content:space-around;gap:8px;padding:4px 0 8px;}' +
+          '.orbit-scheme{flex:1;background:none;border:0;padding:0;color:#c8c8c8;font:12px/1.2 -apple-system,sans-serif;}' +
+          '.orbit-disc{width:84px;height:84px;margin:0 auto 8px;border-radius:50%;position:relative;box-shadow:0 0 0 2px #555;}' +
+          '.orbit-scheme.is-selected .orbit-disc{box-shadow:0 0 0 3px #ff4700;}' +
+          '.orbit-ring{position:absolute;border-radius:50%;border-style:solid;box-sizing:border-box;}' +
+          '.orbit-core{position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;}' +
+          '</style>' +
+          '<div class="orbit-schemes">' +
+            '<button type="button" class="orbit-scheme" data-scheme="midnight">' +
+              '<div class="orbit-disc" style="background:#000">' +
+                '<span class="orbit-ring" style="inset:5px;border-width:7px;border-color:#55aaff"></span>' +
+                '<span class="orbit-ring" style="inset:16px;border-width:7px;border-color:#00aaff"></span>' +
+                '<span class="orbit-ring" style="inset:27px;border-width:7px;border-color:#0055ff"></span>' +
+                '<span class="orbit-core" style="background:#fff"></span>' +
+              '</div>Midnight</button>' +
+            '<button type="button" class="orbit-scheme" data-scheme="dusk">' +
+              '<div class="orbit-disc" style="background:#000">' +
+                '<span class="orbit-ring" style="inset:5px;border-width:7px;border-color:#aa55ff"></span>' +
+                '<span class="orbit-ring" style="inset:16px;border-width:7px;border-color:#ff55aa"></span>' +
+                '<span class="orbit-ring" style="inset:27px;border-width:7px;border-color:#ffaa55"></span>' +
+                '<span class="orbit-core" style="background:#fff"></span>' +
+              '</div>Dusk</button>' +
+            '<button type="button" class="orbit-scheme" data-scheme="paper">' +
+              '<div class="orbit-disc" style="background:#fff">' +
+                '<span class="orbit-ring" style="inset:5px;border-width:7px;border-color:#0055aa"></span>' +
+                '<span class="orbit-ring" style="inset:16px;border-width:7px;border-color:#00aaaa"></span>' +
+                '<span class="orbit-ring" style="inset:27px;border-width:7px;border-color:#ff5555"></span>' +
+                '<span class="orbit-core" style="background:#000"></span>' +
+              '</div>Paper</button>' +
+          '</div>'
       },
       {
         type: 'text',
-        defaultValue: 'Pick a scheme to load those colors. You can still tweak them below, then Save.'
+        defaultValue: 'Tap a circle to load that look, tweak below if you want, then Save.'
       },
       {
         type: 'color',

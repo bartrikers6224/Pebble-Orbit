@@ -44,15 +44,26 @@ module.exports = function() {
         item.set(scheme[keys[i]]);
       }
     }
+
+    var buttons = clayConfig.getItemById('SchemePreviews');
+    if (buttons && buttons.$element) {
+      buttons.$element.select('.orbit-scheme').each(function(node) {
+        if (node.getAttribute('data-scheme') === name) {
+          node.classList.add('is-selected');
+        } else {
+          node.classList.remove('is-selected');
+        }
+      });
+    }
   }
 
   clayConfig.on(clayConfig.EVENTS.AFTER_BUILD, function() {
-    var picker = clayConfig.getItemById('ColorScheme');
-    if (!picker) {
+    var previews = clayConfig.getItemById('SchemePreviews');
+    if (!previews) {
       return;
     }
-    picker.on('change', function() {
-      applyScheme(this.get());
+    previews.$element.select('.orbit-scheme').on('|click', function() {
+      applyScheme(this.getAttribute('data-scheme'));
     });
   });
 };
