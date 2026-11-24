@@ -2,4 +2,4 @@
 alwaysApply: true
 ---
 
-This is Orbit, a Pebble Round 2 watchface (gabbro, 260x260). Build with `pebble build`, install with `pebble install --emulator gabbro --vnc` in headless environments, and screenshot with `pebble screenshot --vnc --emulator gabbro --scale 6 --no-open screenshot_gabbro.png`. Seconds ring must stay on an AppTimer at the configured 1s / 10s / 30s interval, never `SECOND_UNIT`.
+This is Orbit, a Pebble Round 2 watchface (gabbro, 260x260). Build with `pebble build`, install with `pebble install --emulator gabbro --vnc` in headless environments, and screenshot with `pebble screenshot --vnc --emulator gabbro --scale 6 --no-open screenshot_gabbro.png`. Seconds ring must stay on an AppTimer at 1s, 10s, 30s, or Adaptive (1s while backlight is on or for 10s after a flick, otherwise 10s). Never subscribe to `SECOND_UNIT`.

@@ -5,6 +5,15 @@
 #define STILL_DELTA_MG 180
 #define SECONDS_INTERVAL_ADAPTIVE 0
 #define FLICK_LIVE_SECONDS 10
+#define FACE_REF_PX 260
+#define RING_PAD_PX 8
+#define RING_THICKNESS_PX 12
+#define RING_GAP_PX 7
+#define RING_PAD_MIN 6
+#define RING_THICKNESS_MIN 8
+#define RING_GAP_MIN 5
+#define CONTENT_INSET_EXTRA 4
+#define TIME_DATE_GAP 2
 
 typedef struct ClaySettings {
   GColor BackgroundColor;
@@ -36,6 +45,7 @@ static void prv_enter_sleep(void);
 static void prv_exit_sleep(void);
 static void prv_apply_power_mode(void);
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed);
+static int prv_tuple_int(const Tuple *tuple);
 
 static bool prv_is_adaptive(void) {
   return s_settings.SecondsInterval == SECONDS_INTERVAL_ADAPTIVE;
@@ -53,6 +63,38 @@ static uint8_t prv_sanitize_interval(int value) {
     return (uint8_t)value;
   }
   return 10;
+}
+
+static uint8_t prv_parse_interval_tuple(const Tuple *tuple) {
+  if (!tuple) {
+    return 10;
+  }
+
+  if (tuple->type == TUPLE_CSTRING) {
+    if (tuple->length == 0) {
+      return 10;
+    }
+    const uint8_t first = tuple->value->uint8;
+    if (first == 'a' || first == 'A') {
+      return SECONDS_INTERVAL_ADAPTIVE;
+    }
+    if (first < '0' || first > '9') {
+      return 10;
+    }
+  }
+
+  return prv_sanitize_interval(prv_tuple_int(tuple));
+}
+
+static GColor prv_tuple_color(const Tuple *tuple) {
+  return GColorFromHEX(prv_tuple_int(tuple) & 0xFFFFFF);
+}
+
+static int32_t prv_progress_angle(int elapsed, int period) {
+  if (elapsed <= 0 || period <= 0) {
+    return 0;
+  }
+  return elapsed * TRIG_MAX_ANGLE / period;
 }
 
 static uint8_t prv_seconds_step(void) {
@@ -163,23 +205,23 @@ static void canvas_update_proc(Layer *layer, GContext *ctx) {
   graphics_context_set_antialiased(ctx, true);
 
   const int side = bounds.size.w < bounds.size.h ? bounds.size.w : bounds.size.h;
-  int pad = side * 8 / 260;
-  int thickness = side * 12 / 260;
-  int gap = side * 7 / 260;
-  if (pad < 6) {
-    pad = 6;
+  int pad = side * RING_PAD_PX / FACE_REF_PX;
+  int thickness = side * RING_THICKNESS_PX / FACE_REF_PX;
+  int gap = side * RING_GAP_PX / FACE_REF_PX;
+  if (pad < RING_PAD_MIN) {
+    pad = RING_PAD_MIN;
   }
-  if (thickness < 8) {
-    thickness = 8;
+  if (thickness < RING_THICKNESS_MIN) {
+    thickness = RING_THICKNESS_MIN;
   }
-  if (gap < 5) {
-    gap = 5;
+  if (gap < RING_GAP_MIN) {
+    gap = RING_GAP_MIN;
   }
 
   const GRect hours_rect = prv_square_inset(bounds, pad);
   const GRect minutes_rect = grect_inset(hours_rect, GEdgeInsets(thickness + gap));
   const GRect seconds_rect = grect_inset(minutes_rect, GEdgeInsets(thickness + gap));
-  const GRect content = grect_inset(seconds_rect, GEdgeInsets(thickness + 4));
+  const GRect content = grect_inset(seconds_rect, GEdgeInsets(thickness + CONTENT_INSET_EXTRA));
 
   time_t now = time(NULL);
   struct tm *tick_time = localtime(&now);
@@ -191,10 +233,10 @@ static void canvas_update_proc(Layer *layer, GContext *ctx) {
   const int hour_period = twenty_four ? 24 : 12;
   const int hour_in_period = twenty_four ? tick_time->tm_hour : (tick_time->tm_hour % 12);
 
-  const int32_t hour_angle = DEG_TO_TRIGANGLE(
-      (hour_in_period * 60 + minute) * 360 / (hour_period * 60));
-  const int32_t minute_angle = DEG_TO_TRIGANGLE(minute * 360 / 60);
-  const int32_t second_angle = DEG_TO_TRIGANGLE(second_q * 360 / 60);
+  const int32_t hour_angle = prv_progress_angle(hour_in_period * 60 + minute,
+                                                hour_period * 60);
+  const int32_t minute_angle = prv_progress_angle(minute, 60);
+  const int32_t second_angle = prv_progress_angle(second_q, 60);
 
   prv_draw_ring(ctx, hours_rect, (uint16_t)thickness, hour_angle, s_settings.HoursColor);
   prv_draw_ring(ctx, minutes_rect, (uint16_t)thickness, minute_angle, s_settings.MinutesColor);
@@ -213,14 +255,15 @@ static void canvas_update_proc(Layer *layer, GContext *ctx) {
   const GSize date_size = graphics_text_layout_get_content_size(
       date_buffer, date_font, content, GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter);
 
-  const int stack_h = time_size.h + date_size.h + 2;
+  const int stack_h = time_size.h + date_size.h + TIME_DATE_GAP;
   int time_y = content.origin.y + (content.size.h - stack_h) / 2;
   if (time_y < content.origin.y) {
     time_y = content.origin.y;
   }
 
   const GRect time_rect = GRect(content.origin.x, time_y, content.size.w, time_size.h);
-  const GRect date_rect = GRect(content.origin.x, time_y + time_size.h + 2, content.size.w, date_size.h);
+  const GRect date_rect = GRect(content.origin.x, time_y + time_size.h + TIME_DATE_GAP,
+                                content.size.w, date_size.h);
 
   graphics_context_set_text_color(ctx, s_settings.TimeColor);
   graphics_draw_text(ctx, time_buffer, time_font, time_rect,
@@ -412,6 +455,8 @@ static void prv_battery_handler(BatteryChargeState charge) {
   }
   if (charge.is_plugged) {
     prv_enter_sleep();
+  } else if (s_sleeping) {
+    prv_exit_sleep();
   }
 }
 
@@ -479,37 +524,32 @@ static void prv_inbox_received(DictionaryIterator *iter, void *context) {
 
   Tuple *bg = dict_find(iter, MESSAGE_KEY_BackgroundColor);
   if (bg) {
-    s_settings.BackgroundColor = GColorFromHEX(bg->value->int32);
+    s_settings.BackgroundColor = prv_tuple_color(bg);
     changed = true;
   }
   Tuple *time_color = dict_find(iter, MESSAGE_KEY_TimeColor);
   if (time_color) {
-    s_settings.TimeColor = GColorFromHEX(time_color->value->int32);
+    s_settings.TimeColor = prv_tuple_color(time_color);
     changed = true;
   }
   Tuple *hours = dict_find(iter, MESSAGE_KEY_HoursColor);
   if (hours) {
-    s_settings.HoursColor = GColorFromHEX(hours->value->int32);
+    s_settings.HoursColor = prv_tuple_color(hours);
     changed = true;
   }
   Tuple *minutes = dict_find(iter, MESSAGE_KEY_MinutesColor);
   if (minutes) {
-    s_settings.MinutesColor = GColorFromHEX(minutes->value->int32);
+    s_settings.MinutesColor = prv_tuple_color(minutes);
     changed = true;
   }
   Tuple *seconds = dict_find(iter, MESSAGE_KEY_SecondsColor);
   if (seconds) {
-    s_settings.SecondsColor = GColorFromHEX(seconds->value->int32);
+    s_settings.SecondsColor = prv_tuple_color(seconds);
     changed = true;
   }
   Tuple *interval = dict_find(iter, MESSAGE_KEY_SecondsInterval);
   if (interval) {
-    if (interval->type == TUPLE_CSTRING && interval->length > 0 &&
-        (interval->value->uint8 == 'a' || interval->value->uint8 == 'A')) {
-      s_settings.SecondsInterval = SECONDS_INTERVAL_ADAPTIVE;
-    } else {
-      s_settings.SecondsInterval = prv_sanitize_interval(prv_tuple_int(interval));
-    }
+    s_settings.SecondsInterval = prv_parse_interval_tuple(interval);
     changed = true;
   }
   Tuple *battery_save = dict_find(iter, MESSAGE_KEY_BatterySave);

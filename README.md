@@ -54,7 +54,7 @@ Time digits and the hour/minute rings update once a minute. The seconds ring is 
 
 **Adaptive** updates every second while the backlight is on, and for ten seconds after a wrist flick (the same tap interrupt the watch uses for a hard flick). The rest of the time it steps every ten seconds. A gentle glance in daylight does not start the one-second burst if it never registers as a flick and the ambient sensor keeps the backlight off.
 
-**Sleep when idle** (off by default) stops those timers while the watch is charging, or after about five minutes with no motion. The display goes black so a stale time cannot be read as current. Shake or tap to wake. Use this if you want a 1-second seconds ring while worn; the watch still sleeps on the charger or a table. Adaptive can be used with or without sleep.
+**Sleep when idle** (off by default) stops those timers while the watch is charging, or after about five minutes with no motion. The display goes black so a stale time cannot be read as current. Unplugging wakes the face. Shake or tap to wake from idle sleep. Use this if you want a 1-second seconds ring while worn; the watch still sleeps on the charger or a table. Adaptive can be used with or without sleep.
 
 ## App store screenshots
 
