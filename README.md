@@ -6,7 +6,7 @@ A Pebble Round 2 watchface: large digital time in the center, three concentric r
 
 - **Outer ring** — hours (full circle at 12 hours in AM/PM, 24 hours in 24h mode)
 - **Middle ring** — minutes
-- **Inner ring** — seconds, at 1, 10, or 30 second steps (Clay setting)
+- **Inner ring** — seconds, at 1, 10, or 30 second steps, or Adaptive (Clay setting)
 
 Tap the gear next to Orbit in the Pebble app to set colors, the seconds interval, and idle sleep.
 
@@ -50,9 +50,11 @@ pebble emu-app-config --emulator gabbro
 
 ## Battery
 
-Time digits and the hour/minute rings update once a minute. The seconds ring is driven by an `AppTimer` aligned to the interval you pick — 1, 10, or 30 seconds. There is no `SECOND_UNIT` tick subscription.
+Time digits and the hour/minute rings update once a minute. The seconds ring is driven by an `AppTimer` aligned to the interval you pick — 1, 10, or 30 seconds, or Adaptive. There is no `SECOND_UNIT` tick subscription.
 
-**Sleep when idle** (off by default) stops those timers while the watch is charging, or after about five minutes with no motion. The display goes black so a stale time cannot be read as current. Shake or tap to wake. Use this if you want a 1-second seconds ring while worn; the watch still sleeps on the charger or a table.
+**Adaptive** updates every second while the backlight is on, and for ten seconds after a wrist flick (the same tap interrupt the watch uses for a hard flick). The rest of the time it steps every ten seconds. A gentle glance in daylight does not start the one-second burst if it never registers as a flick and the ambient sensor keeps the backlight off.
+
+**Sleep when idle** (off by default) stops those timers while the watch is charging, or after about five minutes with no motion. The display goes black so a stale time cannot be read as current. Shake or tap to wake. Use this if you want a 1-second seconds ring while worn; the watch still sleeps on the charger or a table. Adaptive can be used with or without sleep.
 
 ## App store screenshots
 

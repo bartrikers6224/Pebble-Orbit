@@ -3,6 +3,8 @@
 #define SETTINGS_KEY 1
 #define STILL_MINUTES_TO_SLEEP 5
 #define STILL_DELTA_MG 180
+#define SECONDS_INTERVAL_ADAPTIVE 0
+#define FLICK_LIVE_SECONDS 10
 
 typedef struct ClaySettings {
   GColor BackgroundColor;
@@ -22,6 +24,9 @@ static bool s_sleeping;
 static bool s_ticking;
 static bool s_tap_subscribed;
 static bool s_battery_subscribed;
+static bool s_backlight_subscribed;
+static bool s_backlight_on;
+static time_t s_flick_until;
 static uint8_t s_still_minutes;
 static AccelData s_last_accel;
 static bool s_have_accel;
@@ -32,7 +37,28 @@ static void prv_exit_sleep(void);
 static void prv_apply_power_mode(void);
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed);
 
+static bool prv_is_adaptive(void) {
+  return s_settings.SecondsInterval == SECONDS_INTERVAL_ADAPTIVE;
+}
+
+static bool prv_adaptive_live(void) {
+  if (s_backlight_on) {
+    return true;
+  }
+  return time(NULL) < s_flick_until;
+}
+
+static uint8_t prv_sanitize_interval(int value) {
+  if (value == SECONDS_INTERVAL_ADAPTIVE || value == 1 || value == 10 || value == 30) {
+    return (uint8_t)value;
+  }
+  return 10;
+}
+
 static uint8_t prv_seconds_step(void) {
+  if (prv_is_adaptive()) {
+    return prv_adaptive_live() ? 1 : 10;
+  }
   const uint8_t step = s_settings.SecondsInterval;
   if (step == 1 || step == 10 || step == 30) {
     return step;
@@ -57,7 +83,7 @@ static void prv_save_settings(void) {
 static void prv_load_settings(void) {
   prv_default_settings();
   persist_read_data(SETTINGS_KEY, &s_settings, sizeof(s_settings));
-  s_settings.SecondsInterval = prv_seconds_step();
+  s_settings.SecondsInterval = prv_sanitize_interval(s_settings.SecondsInterval);
 }
 
 static int prv_tuple_int(const Tuple *tuple) {
@@ -346,17 +372,38 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   }
 }
 
+static void prv_note_flick(void) {
+  s_flick_until = time(NULL) + FLICK_LIVE_SECONDS;
+}
+
 static void prv_tap_handler(AccelAxisType axis, int32_t direction) {
   (void)axis;
   (void)direction;
   s_still_minutes = 0;
   s_have_accel = false;
-  if (!s_settings.BatterySave) {
+
+  if (prv_is_adaptive()) {
+    prv_note_flick();
+  }
+
+  if (s_settings.BatterySave && s_sleeping && !prv_is_plugged()) {
+    prv_exit_sleep();
     return;
   }
-  if (s_sleeping && !prv_is_plugged()) {
-    prv_exit_sleep();
+
+  if (prv_is_adaptive() && !s_sleeping) {
+    prv_schedule_seconds_timer();
+    prv_mark_dirty();
   }
+}
+
+static void prv_backlight_handler(bool on) {
+  s_backlight_on = on;
+  if (!prv_is_adaptive() || s_sleeping) {
+    return;
+  }
+  prv_schedule_seconds_timer();
+  prv_mark_dirty();
 }
 
 static void prv_battery_handler(BatteryChargeState charge) {
@@ -368,16 +415,48 @@ static void prv_battery_handler(BatteryChargeState charge) {
   }
 }
 
+static void prv_sync_event_services(void) {
+  const bool need_tap = s_settings.BatterySave || prv_is_adaptive();
+  const bool need_battery = s_settings.BatterySave;
+  const bool need_backlight = prv_is_adaptive();
+
+  if (need_tap && !s_tap_subscribed) {
+    accel_tap_service_subscribe(prv_tap_handler);
+    s_tap_subscribed = true;
+  } else if (!need_tap && s_tap_subscribed) {
+    accel_tap_service_unsubscribe();
+    s_tap_subscribed = false;
+  }
+
+  if (need_battery && !s_battery_subscribed) {
+    battery_state_service_subscribe(prv_battery_handler);
+    s_battery_subscribed = true;
+  } else if (!need_battery && s_battery_subscribed) {
+    battery_state_service_unsubscribe();
+    s_battery_subscribed = false;
+  }
+
+  if (need_backlight && !s_backlight_subscribed) {
+    backlight_service_subscribe(prv_backlight_handler);
+    s_backlight_subscribed = true;
+    s_backlight_on = light_is_on();
+  } else if (!need_backlight && s_backlight_subscribed) {
+    backlight_service_unsubscribe();
+    s_backlight_subscribed = false;
+    s_backlight_on = false;
+    s_flick_until = 0;
+  }
+}
+
 static void prv_apply_power_mode(void) {
+  prv_sync_event_services();
+
+  if (!s_settings.BatterySave) {
+    s_still_minutes = 0;
+    s_have_accel = false;
+  }
+
   if (s_settings.BatterySave) {
-    if (!s_tap_subscribed) {
-      accel_tap_service_subscribe(prv_tap_handler);
-      s_tap_subscribed = true;
-    }
-    if (!s_battery_subscribed) {
-      battery_state_service_subscribe(prv_battery_handler);
-      s_battery_subscribed = true;
-    }
     if (prv_is_plugged()) {
       prv_enter_sleep();
       return;
@@ -385,25 +464,11 @@ static void prv_apply_power_mode(void) {
     if (s_sleeping) {
       return;
     }
-    prv_set_ticking(true);
-    prv_schedule_seconds_timer();
-    return;
-  }
-
-  if (s_tap_subscribed) {
-    accel_tap_service_unsubscribe();
-    s_tap_subscribed = false;
-  }
-  if (s_battery_subscribed) {
-    battery_state_service_unsubscribe();
-    s_battery_subscribed = false;
-  }
-  s_still_minutes = 0;
-  s_have_accel = false;
-  if (s_sleeping) {
+  } else if (s_sleeping) {
     prv_exit_sleep();
     return;
   }
+
   prv_set_ticking(true);
   prv_schedule_seconds_timer();
 }
@@ -439,11 +504,12 @@ static void prv_inbox_received(DictionaryIterator *iter, void *context) {
   }
   Tuple *interval = dict_find(iter, MESSAGE_KEY_SecondsInterval);
   if (interval) {
-    int value = prv_tuple_int(interval);
-    if (value != 1 && value != 10 && value != 30) {
-      value = 10;
+    if (interval->type == TUPLE_CSTRING && interval->length > 0 &&
+        (interval->value->uint8 == 'a' || interval->value->uint8 == 'A')) {
+      s_settings.SecondsInterval = SECONDS_INTERVAL_ADAPTIVE;
+    } else {
+      s_settings.SecondsInterval = prv_sanitize_interval(prv_tuple_int(interval));
     }
-    s_settings.SecondsInterval = (uint8_t)value;
     changed = true;
   }
   Tuple *battery_save = dict_find(iter, MESSAGE_KEY_BatterySave);
@@ -523,6 +589,10 @@ static void deinit(void) {
   if (s_battery_subscribed) {
     battery_state_service_unsubscribe();
     s_battery_subscribed = false;
+  }
+  if (s_backlight_subscribed) {
+    backlight_service_unsubscribe();
+    s_backlight_subscribed = false;
   }
   app_message_deregister_callbacks();
   window_destroy(s_window);

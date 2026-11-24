@@ -66,12 +66,13 @@ module.exports = [
         options: [
           { label: '1 second', value: '1' },
           { label: '10 seconds', value: '10' },
-          { label: '30 seconds', value: '30' }
+          { label: '30 seconds', value: '30' },
+          { label: 'Adaptive', value: 'adaptive' }
         ]
       },
       {
         type: 'text',
-        defaultValue: 'Finer updates use more battery while the watch is awake. With Sleep when idle on, a 1-second ring is reasonable.'
+        defaultValue: 'Finer updates use more battery while the watch is awake. Adaptive runs every second while the backlight is on, and for ten seconds after a wrist flick, otherwise every ten seconds. With Sleep when idle on, a 1-second ring is also reasonable.'
       }
     ]
   },
