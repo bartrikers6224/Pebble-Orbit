@@ -2,7 +2,7 @@
 
 A watchface for Pebble Round 2. Digital time in the center, three rings around it.
 
-![Orbit on Pebble Round 2](screenshots/screenshot_gabbro.png)
+<img src="screenshots/screenshot_gabbro.png" width="260" alt="Orbit on Pebble Round 2">
 
 - **Outer ring** — hours
 - **Middle ring** — minutes
