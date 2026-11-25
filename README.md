@@ -1,70 +1,33 @@
 # Orbit
 
-A Pebble Round 2 watchface: large digital time in the center, three concentric rings around it.
+A watchface for Pebble Round 2. Digital time in the center, three rings around it.
 
 ![Orbit on Pebble Round 2](screenshots/screenshot_gabbro.png)
 
-- **Outer ring** — hours (full circle at 12 hours in AM/PM, 24 hours in 24h mode)
+- **Outer ring** — hours
 - **Middle ring** — minutes
-- **Inner ring** — seconds, at 1, 10, or 30 second steps, or Adaptive (Clay setting)
+- **Inner ring** — seconds
 
-Tap the gear next to Orbit in the Pebble app to set colors, the seconds interval, and idle sleep.
+The hour ring fills over 12 hours or 24 hours, matching the watch’s time format.
 
-Built for **Pebble Round 2** (`gabbro`) on Pebble SDK 4.44.
+Tap the gear next to Orbit in the Pebble app to change colors, how often the seconds ring updates, and whether the face sleeps when idle.
 
-## Install on your watch
+## Install
 
-The built watchface is **`orbit.pbw`** in this repo. Send that file to your phone (AirDrop, email, Drive), then open it with the Pebble app while the Round 2 is connected.
+Download [orbit.pbw](https://github.com/bartrikers6224/Pebble-Orbit/raw/main/orbit.pbw), send it to your phone, and open it with the Pebble app while the watch is connected.
 
-- **iPhone:** Files, Mail, or AirDrop → tap `orbit.pbw` → open in **Pebble**.
-- **Android:** Files / Downloads → tap `orbit.pbw` → open with **Pebble**. If Pebble is not listed, install [Sideload Helper by Rebble](https://help.rebble.io/sideloading/) first.
+- **iPhone:** Files, Mail, or AirDrop → tap the file → open in **Pebble**. If it saves as a `.zip`, rename it to `.pbw` first.
+- **Android:** Downloads → tap the file → open with **Pebble**. If Pebble is not listed, install [Sideload Helper](https://help.rebble.io/sideloading/) first.
 
-Orbit shows up in the locker as sideloaded. Start it from **Apps → Watchfaces**. Tap the gear for settings.
+Then start Orbit from **Apps → Watchfaces**.
 
-To install from a computer with the SDK instead:
+## Settings
 
-```bash
-pebble login
-pebble install --cloudpebble
-```
+**Update every** — 1 second, 10 seconds, 30 seconds, or Adaptive. Adaptive runs every second while the backlight is on, and for a few seconds after you flick your wrist to look. The rest of the time it updates every 10 seconds, which uses less battery.
 
-(Enable **Dev Connection** first: Pebble app → Devices → ⋮ on the watch.)
+**Sleep when idle** — blacks the screen while charging, or after about five minutes with no motion, so a frozen time is not mistaken for the current time. Unplugging wakes it. Shake or tap to wake after idle sleep.
 
-## Build locally
-
-You need the [Pebble SDK](https://developer.repebble.com/sdk) (`pebble-tool` 5.1+ and SDK 4.44).
-
-```bash
-pebble sdk install latest
-pebble build
-pebble install --emulator gabbro
-```
-
-On a machine without a display, add `--vnc` to emulator commands.
-
-Open the settings page against the emulator with:
-
-```bash
-pebble emu-app-config --emulator gabbro
-```
-
-## Battery
-
-Time digits and the hour/minute rings update once a minute. The seconds ring is driven by an `AppTimer` aligned to the interval you pick — 1, 10, or 30 seconds, or Adaptive. There is no `SECOND_UNIT` tick subscription.
-
-**Adaptive** updates every second while the backlight is on, and for ten seconds after a wrist flick (the same tap interrupt the watch uses for a hard flick). The rest of the time it steps every ten seconds. A gentle glance in daylight does not start the one-second burst if it never registers as a flick and the ambient sensor keeps the backlight off.
-
-**Sleep when idle** (off by default) stops those timers while the watch is charging, or after about five minutes with no motion. The display goes black so a stale time cannot be read as current. Unplugging wakes the face. Shake or tap to wake from idle sleep. Use this if you want a 1-second seconds ring while worn; the watch still sleeps on the charger or a table. Adaptive can be used with or without sleep.
-
-## App store screenshots
-
-Gabbro listing images are 260×260, unframed. Upload these three as the Round 2 screenshots (up to five per platform):
-
-| File | Look |
-| --- | --- |
-| `screenshots/gabbro_midnight.png` | Black, three blues |
-| `screenshots/gabbro_dusk.png` | Black, violet / pink / gold |
-| `screenshots/gabbro_paper.png` | White, navy / teal / coral |
+## Looks
 
 | Midnight | Dusk | Paper |
 | --- | --- | --- |
